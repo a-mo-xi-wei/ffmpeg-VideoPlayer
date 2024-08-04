@@ -1,0 +1,88 @@
+QPushButton{
+	border: 1px solid pink;
+	border-radius: 8px;
+	background-color:#FFFF99;
+}
+QPushButton:hover{
+	border: 2px solid black;
+	border-radius: 8px;
+	background-color: #FFFF99;
+}
+QSlider {
+    background-color: rgba(170, 255, 255, 100);  
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;                    
+    background-color: qlineargradient(spread:reflect, x1:0.500364, y1:0.0561364, x2:0.5, y2:0.517045,
+                      stop:0 rgba(168, 164, 168, 250), stop:1 rgba(232, 232, 232, 255));
+    border-radius: 4px;            
+}
+
+QSlider::handle:horizontal {
+    background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.50565, fy:0.500409,
+                      stop:0 rgba(0, 0, 0, 255), stop:0.361582 rgba(0, 146, 146, 255),
+                      stop:0.649718 rgba(255, 255, 255, 255), stop:1 rgba(0, 177, 181, 255));
+    border: 1px solid #5c5c5c;
+    width: 14px;
+    margin: -4px 0px;         
+    border-radius: 8px;      
+}
+
+
+QSlider::sub-page:horizontal {    
+    border: 1px solid #999999;
+    border-radius: 4px;
+    background-color:qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0,
+                     stop:0 rgba(231,80,229, 255),
+                     stop:1 rgba(7,208,255, 255));
+}
+
+
+QLabel#pastTimeLab{
+    border:none;     
+    font:bold italic large;
+    color:green;
+}
+QLabel#totalTimeLab{
+    border:none;     
+    font:bold italic large;
+    color:#FF0066;
+}
+QWidget{
+    background-color:#CCFFCC;
+}
+#playList{
+    border-radius:20px;
+    background-color:#FFFFCC;
+}
+#videoWidget{
+    background-color: rgb(0, 0, 0);
+}
+QFrame{
+    background-color:#CCFFCC;
+}
+
+QComboBox {
+    border: 2px solid pink;  
+    border-radius: 5px;
+    
+}
+
+QComboBox::drop-down {
+     image:url(":/Res/down.png");
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 12px;  
+    height:12px;
+   border:none;
+    
+}
+
+QComboBox QAbstractItemView {
+    border: 2px solid pink;
+   border-radius:5px; 
+    selection-background-color: #CCFFCC; 
+}
+

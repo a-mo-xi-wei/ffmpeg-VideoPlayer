@@ -2,7 +2,15 @@ cmake_minimum_required(VERSION 3.10)
 
 project(VideoPlayer VERSION 1.0)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets UiTools)
 
 #指定头文件包含目录
 include_directories("F:/ffmpeg-build/msvc/include")
@@ -12,10 +20,14 @@ link_directories("F:/ffmpeg-build/msvc/lib/x64")
 
 file(GLOB SOURCE_CPP ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB SOURCE_H ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+file(GLOB SOURCE_UI ${CMAKE_CURRENT_SOURCE_DIR}/*.ui)
+file(GLOB SOURCE_QRC ${CMAKE_CURRENT_SOURCE_DIR}/*.qrc)
 
 set(SOURCE_FILES
 	${SOURCE_CPP}
 	${SOURCE_H}#CMake 会自动处理包含在源文件中的头文件 , 因此这行可以不加。
+	${SOURCE_UI}
+	${SOURCE_QRC}
 )
 
 #message(STATUS "######## ${CMAKE_CURRENT_SOURCE_DIR}")
@@ -24,6 +36,6 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-
 target_link_libraries(${PROJECT_NAME} Qt6::Widgets 
-libavformatd libavcodecd libavutild libavfilterd libavdeviced libswscaled libswresampled) 
+libavformatd libavcodecd libavutild libavfilterd 
+libavdeviced libswscaled libswresampled Qt6::UiTools)

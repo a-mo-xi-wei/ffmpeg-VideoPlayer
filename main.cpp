@@ -1,12 +1,15 @@
 ﻿#include<QApplication>
-#include<QWidget>
 #include"SFFmpeg.h"
 #include"SLogger.h"
+#include"SPlay.h"
 
 int main(int argc, char* argv[]) {
 	QApplication a(argc, argv);
-	QWidget w;
-	w.show();
+
+	SPlay s;
+	s.show();
+
+	return a.exec();
 
 	SFFmpeg ffmpeg;
 	if (!ffmpeg.open("E:/Res/VideoRes/video.mp4")) {
