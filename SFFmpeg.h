@@ -7,6 +7,7 @@ extern "C" {
 #include<libavformat/avformat.h>
 #include<libavcodec/avcodec.h>
 #include"libavutil/avutil.h"
+#include"libswscale/swscale.h"
 }
 class SFFmpeg
 {
@@ -18,8 +19,16 @@ public:
 	std::string errorString()const;
 	uint32_t duration()const { return m_totalMs; }
 
+	inline int videoIndex()const { 
+		//printf("m_videoIndex : %d", this->m_videoIndex); 
+		return this->m_videoIndex; 
+	}
+	inline int audioIndex()const { return this->m_audioIndex; }
+
 	AVPacket read();
 	AVFrame* decode(const AVPacket* pkt);
+
+	bool toRGB(char* out, int outWidth, int outHeight);
 private:
 	AVCodecContext* StreamCodecContext(int index);
 
@@ -34,7 +43,9 @@ private:
 	int m_audioIndex{ -1 };
 
 	AVCodecContext* m_codecCtx[AVMEDIA_TYPE_NB]{};
-	AVFrame* m_frame{};
+	AVFrame* m_yuvFrame{};
+
+	SwsContext* m_swsCtx{};	//缩放上下文
 };
 
 #endif // !SFFMPEG_H

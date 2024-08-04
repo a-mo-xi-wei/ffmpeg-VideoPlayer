@@ -77,8 +77,8 @@ void SFFmpeg::close()
 			avcodec_free_context(&this->m_codecCtx[i]);
 		}
 	}
-	if (this->m_frame) {
-		av_frame_free(&this->m_frame);
+	if (this->m_yuvFrame) {
+		av_frame_free(&this->m_yuvFrame);
 	}
 }
 
@@ -115,8 +115,8 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 		return nullptr;
 	}
 
-	if (!this->m_frame) {
-		return av_frame_alloc();
+	if (!this->m_yuvFrame) {
+		this->m_yuvFrame = av_frame_alloc();
 	}
 
 	int ret = avcodec_send_packet(this->m_codecCtx[pkt->stream_index], pkt);
@@ -128,10 +128,10 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 		else if (ret == AVERROR_EOF) {
 			LOG_DEBUG("AVERROR_EOF");
 		}
-		else LOG_DEBUG(this->m_errBuf);
+		else LOG_ERROR("other error : %s",this->m_errBuf);
 	}
 
-	ret = avcodec_receive_frame(this->m_codecCtx[pkt->stream_index], this->m_frame);
+	ret = avcodec_receive_frame(this->m_codecCtx[pkt->stream_index], this->m_yuvFrame);
 	if (ret != 0) {
 		av_strerror(ret, this->m_errBuf, sizeof(this->m_errBuf));
 		if (ret == AVERROR(EAGAIN)) {
@@ -141,8 +141,37 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 			LOG_DEBUG("AVERROR_EOF");
 		}
 		else LOG_DEBUG(this->m_errBuf);
+		return nullptr;
 	}
-	return this->m_frame;
+
+	return this->m_yuvFrame;
+}
+
+bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
+{
+	std::lock_guard<std::mutex>lock(this->m_mutex);
+	if (!isOpen() || !this->m_yuvFrame)
+		return false;
+
+ 	this->m_swsCtx = sws_getCachedContext(this->m_swsCtx,
+		this->m_yuvFrame->width, this->m_yuvFrame->height,
+		(AVPixelFormat)this->m_yuvFrame->format,outWidth, outHeight,
+		AV_PIX_FMT_RGBA, SWS_BICUBIC,nullptr, nullptr, nullptr);
+	if (!this->m_swsCtx) {
+		LOG_WARNING("sws_getCachedContext failed");
+		return false;
+	}
+	uint8_t* data[AV_NUM_DATA_POINTERS] = { (uint8_t*)out };
+	int linesize[AV_NUM_DATA_POINTERS] = {outWidth * 4};
+
+	int h = sws_scale(this->m_swsCtx, this->m_yuvFrame->data,
+		this->m_yuvFrame->linesize,0,this->m_yuvFrame->height,
+		data,linesize);
+	if (h <= 0) {
+		LOG_ERROR("sws_scale failed !");
+	}
+	LOG_INFO("h : %d", h);
+	return true;
 }
 
 AVCodecContext* SFFmpeg::StreamCodecContext(int index)
