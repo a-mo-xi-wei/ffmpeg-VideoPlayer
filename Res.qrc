@@ -1,11 +1,23 @@
 <RCC>
     <qresource prefix="/">
-        <file>Res/1.5.png</file>
-        <file>Res/1.png</file>
-        <file>Res/2.png</file>
         <file>Res/down.png</file>
         <file>Res/pause.png</file>
         <file>Res/player.png</file>
         <file>Res/style.qss</file>
+        <file>Res/bigVolume.png</file>
+        <file>Res/noVolume.png</file>
+        <file>Res/volume.png</file>
+        <file>Res/prev.png</file>
+        <file>Res/next.png</file>
+        <file>Res/playlist.png</file>
+        <file>Res/add.png</file>
+        <file>Res/clear.png</file>
+        <file>Res/order-play.png</file>
+        <file>Res/close.png</file>
+        <file>Res/icon_zmkm3bfkkd.zip</file>
+        <file>Res/max.png</file>
+        <file>Res/min.png</file>
+        <file>Res/top_on.png</file>
+        <file>Res/top_off.png</file>
     </qresource>
 </RCC>

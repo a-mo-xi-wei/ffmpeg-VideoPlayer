@@ -2,12 +2,24 @@ QPushButton{
 	border: 1px solid pink;
 	border-radius: 8px;
 	background-color:#FFFF99;
-}
+} 
 QPushButton:hover{
 	border: 2px solid black;
 	border-radius: 8px;
 	background-color: #FFFF99;
 }
+
+QPushButton#prevBtn , QPushButton#nextBtn , 
+QPushButton#playBtn , QPushButton#playListBtn{
+     border:none;
+     border-radius:15px;
+}
+QPushButton#addPlayListBtn, QPushButton#playModeBtn, 
+QPushButton#clearPlayListBtn{
+    border:none;
+    border-radius:10px;
+}
+
 QSlider {
     background-color: rgba(170, 255, 255, 100);  
 }
@@ -50,19 +62,18 @@ QLabel#totalTimeLab{
     font:bold italic large;
     color:#FF0066;
 }
+
 QWidget{
-    background-color:#CCFFCC;
+    background-color:#CCFFEE;
 }
-#playList{
+#playListView{
     border-radius:20px;
     background-color:#FFFFCC;
 }
 #videoWidget{
     background-color: rgb(0, 0, 0);
 }
-QFrame{
-    background-color:#CCFFCC;
-}
+
 
 QComboBox {
     border: 2px solid pink;  
@@ -71,7 +82,7 @@ QComboBox {
 }
 
 QComboBox::drop-down {
-     image:url(":/Res/down.png");
+    image:url(":/Res/down.png");
     subcontrol-origin: padding;
     subcontrol-position: center right;
     width: 12px;  

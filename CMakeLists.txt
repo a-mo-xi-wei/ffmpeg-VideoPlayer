@@ -21,20 +21,18 @@ link_directories("F:/ffmpeg-build/msvc/lib/x64")
 file(GLOB SOURCE_CPP ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB SOURCE_H ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 file(GLOB SOURCE_UI ${CMAKE_CURRENT_SOURCE_DIR}/*.ui)
-file(GLOB SOURCE_QRC ${CMAKE_CURRENT_SOURCE_DIR}/*.qrc)
 
 set(SOURCE_FILES
 	${SOURCE_CPP}
 	${SOURCE_H}#CMake 会自动处理包含在源文件中的头文件 , 因此这行可以不加。
 	${SOURCE_UI}
-	${SOURCE_QRC}
 )
 
 #message(STATUS "######## ${CMAKE_CURRENT_SOURCE_DIR}")
 #message(STATUS "######## ${SOURCE_CPP}")
 #message(STATUS "######## ${SOURCE_H}")
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} "Res.qrc")
 
 target_link_libraries(${PROJECT_NAME} Qt6::Widgets 
 libavformatd libavcodecd libavutild libavfilterd 
