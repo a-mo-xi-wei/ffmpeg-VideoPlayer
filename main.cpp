@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
 
 	SPlay s;
 	s.show();
-
+	//s.testEfficientcy();
 	return a.exec();
 
 	SFFmpeg ffmpeg;

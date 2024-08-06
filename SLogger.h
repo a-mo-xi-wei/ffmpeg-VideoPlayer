@@ -33,8 +33,8 @@ public:
 		}
 		return "UnKnown";
 	}
-
 };
+
 class SLogger
 {
 public:
