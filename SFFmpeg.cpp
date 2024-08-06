@@ -4,6 +4,17 @@ SFFmpeg::SFFmpeg()
 {
 }
 
+SFFmpeg& SFFmpeg::instance()
+{
+	static SFFmpeg ffmpeg;
+	return ffmpeg;
+}
+
+static inline double q2d(AVRational a) {
+	if (a.den == 0)return 0.0;
+	return a.num / (double)a.den;
+}
+
 bool SFFmpeg::open(const std::string& filename)
 {
 	if (isOpen())close();
@@ -27,7 +38,7 @@ bool SFFmpeg::open(const std::string& filename)
 	//获取视频时长
 	m_totalMs = (double)this->m_fmtCtx->duration / AV_TIME_BASE * 1000;
 
-	//查找音视频流
+	//查找视频流
 	this->m_videoIndex = av_find_best_stream(this->m_fmtCtx,
 		AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 	if (this->m_videoIndex < 0) {
@@ -40,7 +51,12 @@ bool SFFmpeg::open(const std::string& filename)
 		av_strerror(this->m_videoIndex, this->m_errBuf,
 			sizeof(this->m_errBuf));
 	}
-	else this->m_codecCtx[this->m_videoIndex] = StreamCodecContext(this->m_videoIndex);
+	else {
+		this->m_codecCtx[this->m_videoIndex] = 
+			StreamCodecContext(this->m_videoIndex);
+		this->m_fps = q2d(this->m_fmtCtx->streams[this->m_videoIndex]->avg_frame_rate);
+	}
+	//查找音频流
 	this->m_audioIndex = av_find_best_stream(this->m_fmtCtx, 
 		AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (this->m_audioIndex < 0) {
@@ -101,7 +117,7 @@ AVPacket SFFmpeg::read()
 	int ret = av_read_frame(this->m_fmtCtx, &pkt);
 	if (ret < 0) {
 		av_strerror(ret, this->m_errBuf, sizeof(this->m_errBuf));
-		LOG_WARNING(this->m_errBuf);
+		//LOG_WARNING(this->m_errBuf);
 		return pkt;
 	}
 	return pkt;
@@ -143,14 +159,15 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 		else LOG_DEBUG(this->m_errBuf);
 		return nullptr;
 	}
-
+	//获取当前播放时长
+	this->m_pts = this->m_yuvFrame->pts * q2d(this->m_fmtCtx->streams[this->m_videoIndex]->time_base) * 1000;
 	return this->m_yuvFrame;
 }
 
 bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
 {
 	std::lock_guard<std::mutex>lock(this->m_mutex);
-	if (!isOpen() || !this->m_yuvFrame)
+	if (!isOpen() || !this->m_yuvFrame || !this->m_yuvFrame->data[0])
 		return false;
 
  	this->m_swsCtx = sws_getCachedContext(this->m_swsCtx,
@@ -170,7 +187,7 @@ bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
 	if (h <= 0) {
 		LOG_ERROR("sws_scale failed !");
 	}
-	LOG_INFO("h : %d", h);
+	//LOG_INFO("h : %d", h);
 	return true;
 }
 

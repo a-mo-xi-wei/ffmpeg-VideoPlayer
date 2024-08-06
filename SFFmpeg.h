@@ -13,11 +13,17 @@ class SFFmpeg
 {
 public:
 	SFFmpeg();
+
+	static SFFmpeg& instance();
+
 	bool open(const std::string& filename);
 	bool isOpen()const;
 	void close();
+
 	std::string errorString()const;
 	uint32_t duration()const { return m_totalMs; }
+	double fps() { return this->m_fps; }
+	uint32_t position() { return this->m_pts; }
 
 	inline int videoIndex()const { 
 		//printf("m_videoIndex : %d", this->m_videoIndex); 
@@ -38,6 +44,8 @@ private:
 	char m_errBuf[AV_ERROR_MAX_STRING_SIZE]{};
 
 	uint32_t m_totalMs{};	//视频时长(ms)
+	double m_fps = 0.0;		//视频帧率
+	double m_pts = 0.0;		//当前播放时长
 
 	int m_videoIndex{ -1 };
 	int m_audioIndex{ -1 };
