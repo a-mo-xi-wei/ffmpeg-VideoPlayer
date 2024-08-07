@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets UiTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets UiTools Multimedia)
 
 #指定头文件包含目录
 include_directories("F:/ffmpeg-build/msvc/include")
@@ -34,6 +34,6 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} "Res.qrc")
 
-target_link_libraries(${PROJECT_NAME} Qt6::Widgets 
+target_link_libraries(${PROJECT_NAME} Qt6::Widgets Qt6::Multimedia
 libavformatd libavcodecd libavutild libavfilterd 
 libavdeviced libswscaled libswresampled Qt6::UiTools)

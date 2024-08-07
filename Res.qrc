@@ -19,5 +19,6 @@
         <file>Res/min.png</file>
         <file>Res/top_on.png</file>
         <file>Res/top_off.png</file>
+        <file>Res/play.png</file>
     </qresource>
 </RCC>

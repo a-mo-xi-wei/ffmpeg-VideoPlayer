@@ -20,6 +20,11 @@ QPushButton#clearPlayListBtn{
     border-radius:10px;
 }
 
+#addPlayListBtn:hover,#playModeBtn:hover, 
+#clearPlayListBtn:hover{
+	background-color: #FFCCCC;
+}
+
 QSlider {
     background-color: rgba(170, 255, 255, 100);  
 }
@@ -70,10 +75,6 @@ QWidget{
     border-radius:20px;
     background-color:#FFFFCC;
 }
-#videoWidget{
-    background-color: rgb(0, 0, 0);
-}
-
 
 QComboBox {
     border: 2px solid pink;  
@@ -85,9 +86,9 @@ QComboBox::drop-down {
     image:url(":/Res/down.png");
     subcontrol-origin: padding;
     subcontrol-position: center right;
-    width: 12px;  
+    width: 12px;
     height:12px;
-   border:none;
+    border:none;
     
 }
 

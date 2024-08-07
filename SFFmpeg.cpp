@@ -56,6 +56,7 @@ bool SFFmpeg::open(const std::string& filename)
 			StreamCodecContext(this->m_videoIndex);
 		this->m_fps = q2d(this->m_fmtCtx->streams[this->m_videoIndex]->avg_frame_rate);
 	}
+
 	//查找音频流
 	this->m_audioIndex = av_find_best_stream(this->m_fmtCtx, 
 		AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
@@ -69,8 +70,17 @@ bool SFFmpeg::open(const std::string& filename)
 		av_strerror(this->m_audioIndex, this->m_errBuf,
 			sizeof(this->m_errBuf));
 	}
-	else this->m_codecCtx[this->m_audioIndex] = StreamCodecContext(this->m_audioIndex);
-
+	else
+	{
+		this->m_codecCtx[this->m_audioIndex] =
+			StreamCodecContext(this->m_audioIndex);
+		this->m_audioFmt.setSampleRate(this->m_codecCtx[this->m_audioIndex]->sample_rate);
+		this->m_audioFmt.setSampleChannels(this->m_codecCtx[this->m_audioIndex]->ch_layout.nb_channels);
+		this->m_audioFmt.setSampleFormat(this->m_codecCtx[this->m_audioIndex]->sample_fmt);
+			
+		LOG_DEBUG("audio sample-reat : %d sample-format : %d channel count : %d ",
+			this->m_audioFmt.sampleRate(),this->m_audioFmt.sampleFormat(), this->m_audioFmt.sampleChannels());
+	}
 	return true;
 }
 
@@ -96,12 +106,50 @@ void SFFmpeg::close()
 	if (this->m_yuvFrame) {
 		av_frame_free(&this->m_yuvFrame);
 	}
+	if (this->m_pcmFrame) {
+		av_frame_free(&this->m_pcmFrame);
+	}
+
+	swr_free(&this->m_swrCtx);
+	sws_freeContext(this->m_swsCtx);
+	this->m_swsCtx = nullptr;
 }
 
 std::string SFFmpeg::errorString() const
 { 
 	std::lock_guard<std::mutex>lock(this->m_mutex);
 	return std::string(this->m_errBuf);
+}
+
+void SFFmpeg::aspectSize(int* w, int* h)
+{
+	switch (this->m_aspectMode)
+	{
+	case SFFmpeg::AspectNone:
+		this->m_rational = { 0 };
+		break;
+	case SFFmpeg::Aspect4_3:
+		this->m_rational = { 4 , 3};
+		break;
+	case SFFmpeg::Aspect16_9:
+		this->m_rational = { 16 , 9};
+		break;
+	}
+	if (this->m_aspectMode != AspectNone && this->m_rational.num != 0 &&
+		this->m_rational.den != 0) {
+		*h = FFMIN(*w / q2d(this->m_rational), *h);
+		*w = FFMIN(*h * q2d(this->m_rational), *w);
+	}
+
+
+}
+
+double SFFmpeg::packetPts(const AVPacket& pkt)
+{
+	std::lock_guard<std::mutex>lock(this->m_mutex);
+	if (isOpen() || pkt.size == 0)return 0.0;
+	return this->m_pts =  pkt.pts * q2d(this->m_fmtCtx->streams[pkt.stream_index]->time_base) * 1000;
+	 
 }
 
 AVPacket SFFmpeg::read()
@@ -123,16 +171,19 @@ AVPacket SFFmpeg::read()
 	return pkt;
 }
 
-AVFrame* SFFmpeg::decode(const AVPacket* pkt)
+int SFFmpeg::decode(const AVPacket* pkt)
 {
 	std::lock_guard<std::mutex>lock(this->m_mutex);
 	if (!isOpen()) {
 		LOG_ERROR("未打开文件");
-		return nullptr;
+		return -1;
 	}
 
 	if (!this->m_yuvFrame) {
 		this->m_yuvFrame = av_frame_alloc();
+	}
+	if (!this->m_pcmFrame) {
+		this->m_pcmFrame = av_frame_alloc();
 	}
 
 	int ret = avcodec_send_packet(this->m_codecCtx[pkt->stream_index], pkt);
@@ -147,7 +198,13 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 		else LOG_ERROR("other error : %s",this->m_errBuf);
 	}
 
-	ret = avcodec_receive_frame(this->m_codecCtx[pkt->stream_index], this->m_yuvFrame);
+	AVFrame* frame = nullptr;
+	if (pkt->stream_index == this->m_audioIndex)
+		frame = this->m_pcmFrame;
+	else
+		frame = this->m_yuvFrame;
+
+	ret = avcodec_receive_frame(this->m_codecCtx[pkt->stream_index], frame);
 	if (ret != 0) {
 		av_strerror(ret, this->m_errBuf, sizeof(this->m_errBuf));
 		if (ret == AVERROR(EAGAIN)) {
@@ -157,11 +214,20 @@ AVFrame* SFFmpeg::decode(const AVPacket* pkt)
 			LOG_DEBUG("AVERROR_EOF");
 		}
 		else LOG_DEBUG(this->m_errBuf);
-		return nullptr;
+		return -1;
 	}
-	//获取当前播放时长
-	this->m_pts = this->m_yuvFrame->pts * q2d(this->m_fmtCtx->streams[this->m_videoIndex]->time_base) * 1000;
-	return this->m_yuvFrame;
+	double pts = frame->pts * q2d(this->m_fmtCtx->streams[pkt->stream_index]->time_base) * 1000;
+
+	if (pkt->stream_index == this->m_videoIndex) {
+		//获取当前播放时长
+		this->m_pts = pts;
+		if (this->m_aspectMode == AspectMode::AspectOriginal) {
+			this->m_rational = av_d2q(
+				(static_cast<double>(this->m_yuvFrame->width) /
+					frame->height), 1920);
+		}
+	}
+	return pts;
 }
 
 bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
@@ -188,6 +254,53 @@ bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
 		LOG_ERROR("sws_scale failed !");
 	}
 	//LOG_INFO("h : %d", h);
+	return true;
+}
+
+bool SFFmpeg::toPCM(char* out, int* outSize)
+{
+	std::lock_guard<std::mutex>lock(this->m_mutex);
+	if (!isOpen() || !m_pcmFrame || !m_pcmFrame->data[0])
+		return false;
+	if (!this->m_swrCtx) {
+		int ret = swr_alloc_set_opts2(&m_swrCtx,
+			&this->m_pcmFrame->ch_layout,
+			AV_SAMPLE_FMT_S16,
+			this->m_audioFmt.sampleRate(),
+			&this->m_pcmFrame->ch_layout,
+			(AVSampleFormat)this->m_pcmFrame->format,
+			this->m_pcmFrame->sample_rate,
+			0, nullptr);
+		if (ret != 0) {
+			av_strerror(ret,this->m_errBuf, sizeof(this->m_errBuf));
+			LOG_ERROR("swr_alloc_set_opts2 failed %s ", this->m_errBuf);
+			return false;
+		}
+
+		ret = swr_init(this->m_swrCtx);
+		if (ret < 0)return -1;
+	}
+	uint8_t* data[1] = { (uint8_t*)out };
+	//获取输出采样数
+	auto out_cnt = swr_get_out_samples(this->m_swrCtx, this->m_pcmFrame->nb_samples);
+	//重采样
+	int ret = swr_convert(this->m_swrCtx,data,out_cnt,this->m_pcmFrame->data, this->m_pcmFrame->nb_samples);
+	if (ret < 0) {
+		av_strerror(ret, this->m_errBuf, sizeof(this->m_errBuf));
+		LOG_ERROR("swr_convert failed %s ", this->m_errBuf);
+		return false;
+	}
+	//获取输出的数据大小
+	ret = av_samples_get_buffer_size(nullptr,
+		this->m_pcmFrame->ch_layout.nb_channels, 
+		this->m_pcmFrame->nb_samples, 
+		AVSampleFormat::AV_SAMPLE_FMT_S16, 0);
+	if (ret < 0) {
+		av_strerror(ret, this->m_errBuf, sizeof(this->m_errBuf));
+		LOG_ERROR("swr_convert failed %s ", this->m_errBuf);
+		return false;
+	}
+	*outSize = ret;
 	return true;
 }
 

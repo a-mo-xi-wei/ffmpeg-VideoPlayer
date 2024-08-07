@@ -2,15 +2,26 @@
 #define SFFMPEG_H
 #include<string>
 #include<mutex>
-
+#include"SAudioFormat.h"
 extern "C" {
 #include<libavformat/avformat.h>
 #include<libavcodec/avcodec.h>
 #include"libavutil/avutil.h"
 #include"libswscale/swscale.h"
+#include"libswresample/swresample.h"
 }
 class SFFmpeg
 {
+public:
+	enum AspectMode
+	{
+		AspectNone,		//自由缩放
+		AspectOriginal,	//原始比例
+		Aspect4_3,		//4 : 3
+		Aspect16_9		//16 : 9
+	};
+
+
 public:
 	SFFmpeg();
 
@@ -30,11 +41,25 @@ public:
 		return this->m_videoIndex; 
 	}
 	inline int audioIndex()const { return this->m_audioIndex; }
+	
+	bool isPlay()const { return this->m_isPlay; }
+	void setPlay(bool play) { this->m_isPlay = play; }
+
+	AspectMode aspectMode()const { return this->m_aspectMode; }
+	void setAspectMode(AspectMode mode) { this->m_aspectMode = mode; }
+
+	void aspectSize(int* w, int* h);
+
+	SAudioFormat audioFormat()const { return this->m_audioFmt; }
+	void setAudioFormat(const SAudioFormat& fmt) { this->m_audioFmt = fmt; }
+
+	double packetPts(const AVPacket& pkt);
 
 	AVPacket read();
-	AVFrame* decode(const AVPacket* pkt);
+	int decode(const AVPacket* pkt);
 
 	bool toRGB(char* out, int outWidth, int outHeight);
+	bool toPCM(char* out, int* outSize);
 private:
 	AVCodecContext* StreamCodecContext(int index);
 
@@ -46,14 +71,25 @@ private:
 	uint32_t m_totalMs{};	//视频时长(ms)
 	double m_fps = 0.0;		//视频帧率
 	double m_pts = 0.0;		//当前播放时长
+	bool m_isPlay{ false };
+
+	//缩放模式
+	AspectMode m_aspectMode{ AspectMode::AspectOriginal };
+	//缩放比例
+	AVRational m_rational{ 0,0 };
 
 	int m_videoIndex{ -1 };
 	int m_audioIndex{ -1 };
 
 	AVCodecContext* m_codecCtx[AVMEDIA_TYPE_NB]{};
 	AVFrame* m_yuvFrame{};
+	AVFrame* m_pcmFrame{};
 
 	SwsContext* m_swsCtx{};	//缩放上下文
+	SwrContext* m_swrCtx{};	//音频重采样
+
+	SAudioFormat m_audioFmt;
+
 };
 
 #endif // !SFFMPEG_H
