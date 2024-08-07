@@ -45,15 +45,20 @@ public:
     //void on_volumeSlider_valueChanged_optimized(int value);
 
 public slots:
-    
+
+    //controlWidget slots
+	void on_prevBtn_clicked();
+	void on_nextBtn_clicked();
+	void on_playBtn_clicked();
 	void on_playListBtn_clicked();
     void on_volumeSlider_valueChanged(int value);
 
     //playListWidget slots
 	void on_addPlayListBtn_clicked();
 	void on_clearPlayListBtn_clicked();
-	void on_prevBtn_clicked();
-	void on_nextBtn_clicked();
+
+    //titleBar
+    void on_topBtn_clicked();
 
 
 	void on_playListView_doubleClicked(const QModelIndex& index);

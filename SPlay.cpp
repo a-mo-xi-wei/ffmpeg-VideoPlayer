@@ -2,8 +2,14 @@
 #include "ui_SPlay.h"
 #include"SFFmpeg.h"
 #include"SLogger.h"
+#include"VideoWidget.h"
+#include"SAudioPlay.h"
+#include"SEventFilterObject.h"
+
 #include<QFile>
 #include<QFileDialog>
+std::once_flag flag;
+
 SPlay::SPlay(QWidget *parent)
 	: QWidget(parent)
 	,ui(new Ui::SPlay)
@@ -21,6 +27,11 @@ SPlay::~SPlay()
 
 void SPlay::initUi()
 {
+	//去掉标题栏
+	setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
+	//让无边框窗口能够被拖动
+	//installEventFilter(new SEventFilterObject(this));
+
 	QFile file(":/Res/style.qss");
 	if (!file.open(QIODevice::ReadOnly)) {
 		qDebug() << "样式表打开失败QAQ";
@@ -49,6 +60,7 @@ void SPlay::initUi()
 	ui->volumeSlider->setMinimum(1);   // 设置最小值
 	ui->volumeSlider->setMaximum(100); // 设置最大值
 	ui->volumeLab->installEventFilter(this);
+
 	//playListWidget
 	ui->playModeBtn->setIcon(QIcon(":/Res/order-play.png"));
 	ui->addPlayListBtn->setIcon(QIcon(":/Res/add.png"));
@@ -57,6 +69,7 @@ void SPlay::initUi()
 	this->m_delegate = new CustomDelegate(ui->playListView);
 	ui->playListView->setItemDelegate(this->m_delegate);
 	ui->playListView->setEditTriggers(QListView::NoEditTriggers);
+
 	//auto item = new QStandardItem();
 	//item->setEnabled(false);
 	//item->setSelectable(false);
@@ -64,6 +77,7 @@ void SPlay::initUi()
 	//this->m_playListModel->appendRow(item);
 	
 }
+
 //#include <QElapsedTimer>
 //#include <QDebug>
 //
@@ -146,7 +160,7 @@ void SPlay::on_volumeSlider_valueChanged(int value)
 	QString currentImagePath = ui->volumeLab->property("imagePath").toString();
 	QString newImagePath;
 
-	if (value > 50) {
+	if (value > ui->volumeSlider->maximum() / 2) {
 		newImagePath = ":/Res/bigVolume.png";
 	}
 	else {
@@ -179,8 +193,25 @@ void SPlay::on_clearPlayListBtn_clicked()
 	this->m_playListModel->clear();
 }
 
+void SPlay::on_topBtn_clicked()
+{
+	Qt::WindowFlags flags = windowFlags();
+	if (windowFlags() & Qt::WindowStaysOnTopHint) {
+		flags &= ~Qt::WindowStaysOnTopHint;
+		setWindowFlags(flags);
+		ui->topBtn->setIcon(QIcon(":Res/top_off.png"));
+	}
+	else {
+		flags |= Qt::WindowStaysOnTopHint;
+		setWindowFlags(flags);
+		ui->topBtn->setIcon(QIcon(":Res/top_on.png"));
+	}
+	show();
+}
+
 void SPlay::on_prevBtn_clicked()
 {
+	if (this->m_currentIndex == -1)return;
 	this->m_currentIndex = (this->m_currentIndex + this->m_playListModel->rowCount() - 1) % this->m_playListModel->rowCount();
 	auto index = this->m_playListModel->index(this->m_currentIndex, 0);
 	ui->playListView->setCurrentIndex(index);
@@ -189,10 +220,23 @@ void SPlay::on_prevBtn_clicked()
 
 void SPlay::on_nextBtn_clicked()
 {
+	if (this->m_currentIndex == -1)return;
 	this->m_currentIndex = (this->m_currentIndex + 1) % this->m_playListModel->rowCount();
 	auto index = this->m_playListModel->index(this->m_currentIndex, 0);
 	ui->playListView->setCurrentIndex(index); 
 	emit ui->playListView->doubleClicked(index);
+}
+
+void SPlay::on_playBtn_clicked()
+{
+	if (SFFmpeg::instance().isPlay()) {
+		SFFmpeg::instance().setPlay(false);
+		ui->playBtn->setIcon(QIcon(":/Res/pause.png"));
+	}
+	else {
+		SFFmpeg::instance().setPlay(true);
+		ui->playBtn->setIcon(QIcon(":/Res/play.png"));
+	}
 }
 
 void SPlay::on_playListView_doubleClicked(const QModelIndex& index)
@@ -202,11 +246,15 @@ void SPlay::on_playListView_doubleClicked(const QModelIndex& index)
 		return;
 	}
 	this->m_currentIndex = index.row();
-
+	SAudioPlay::instance()->setAudioFormat(SFFmpeg::instance().audioFormat());
+	SAudioPlay::instance()->start();
 	if(!SFFmpeg::instance().open(fileName.toStdString())){
 		LOG_ERROR("文件打开失败");
 		return;
 	}
+
+	std::call_once(flag,&VideoWidget::threadStart,ui->videoWidget);
+
 	//显示总时长
 	auto totalTime = SFFmpeg::instance().duration() / 1000;
 	ui->totalTimeLab->setText(QString("%1:%2:%3")
@@ -215,6 +263,9 @@ void SPlay::on_playListView_doubleClicked(const QModelIndex& index)
 	.arg(totalTime % 60, 2, 10, QChar('0'))
 	);
 	qInfo() << fileName;
+	ui->playListView->setCurrentIndex(index);
+	SFFmpeg::instance().setPlay(true);
+
 }
 
 void SPlay::timerEvent(QTimerEvent* ev)
@@ -229,8 +280,8 @@ void SPlay::timerEvent(QTimerEvent* ev)
 
 	//更新播放进度条
 	auto totalTime = SFFmpeg::instance().duration();
-	auto rate = pastTime * 1000 / static_cast<double>(totalTime);
-	ui->playProcessSlider->setValue(rate * 1000);
+	auto rate = SFFmpeg::instance().position() / static_cast<double>(totalTime);
+	ui->playProcessSlider->setValue(rate * 10000);
 }
 
 bool SPlay::eventFilter(QObject* obj, QEvent* ev)
