@@ -8,7 +8,6 @@
 
 #include<QFile>
 #include<QFileDialog>
-std::once_flag flag;
 
 SPlay::SPlay(QWidget *parent)
 	: QWidget(parent)
@@ -17,7 +16,7 @@ SPlay::SPlay(QWidget *parent)
 {
 	ui->setupUi(this);
 	initUi();
-	startTimer(1000);
+	startTimer(100);
 }
 
 SPlay::~SPlay()
@@ -31,6 +30,7 @@ void SPlay::initUi()
 	setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
 	//让无边框窗口能够被拖动
 	//installEventFilter(new SEventFilterObject(this));
+	move(200, 200);
 
 	QFile file(":/Res/style.qss");
 	if (!file.open(QIODevice::ReadOnly)) {
@@ -209,9 +209,32 @@ void SPlay::on_topBtn_clicked()
 	show();
 }
 
+void SPlay::on_minBtn_clicked()
+{
+	this->showMinimized();
+}
+
+void SPlay::on_maxBtn_clicked()
+{
+	if (this->isMaximized()) {
+		this->showNormal();
+		ui->maxBtn->setIcon(QIcon(":Res/max.png"));
+	}
+	else {
+		this->showMaximized();
+		ui->maxBtn->setIcon(QIcon(":Res/resume.png"));
+	}
+}
+
+void SPlay::on_closeBtn_clicked()
+{
+	this->close();
+}
+
 void SPlay::on_prevBtn_clicked()
 {
 	if (this->m_currentIndex == -1)return;
+
 	this->m_currentIndex = (this->m_currentIndex + this->m_playListModel->rowCount() - 1) % this->m_playListModel->rowCount();
 	auto index = this->m_playListModel->index(this->m_currentIndex, 0);
 	ui->playListView->setCurrentIndex(index);
@@ -221,6 +244,7 @@ void SPlay::on_prevBtn_clicked()
 void SPlay::on_nextBtn_clicked()
 {
 	if (this->m_currentIndex == -1)return;
+
 	this->m_currentIndex = (this->m_currentIndex + 1) % this->m_playListModel->rowCount();
 	auto index = this->m_playListModel->index(this->m_currentIndex, 0);
 	ui->playListView->setCurrentIndex(index); 
@@ -229,6 +253,18 @@ void SPlay::on_nextBtn_clicked()
 
 void SPlay::on_playBtn_clicked()
 {
+	if (this->m_playListModel->rowCount() == 0)
+		return;
+	//没有聚焦就播放第一行 
+	if (!ui->playListView->currentIndex().isValid()) {
+		this->m_currentIndex = 0;
+		auto index = this->m_playListModel->index(this->m_currentIndex, 0);
+		ui->playListView->setCurrentIndex(index);
+		emit ui->playListView->doubleClicked(index);
+		SFFmpeg::instance().setPlay(true);
+		ui->playBtn->setIcon(QIcon(":/Res/play.png"));
+		return;
+	}
 	if (SFFmpeg::instance().isPlay()) {
 		SFFmpeg::instance().setPlay(false);
 		ui->playBtn->setIcon(QIcon(":/Res/pause.png"));
@@ -247,13 +283,12 @@ void SPlay::on_playListView_doubleClicked(const QModelIndex& index)
 	}
 	this->m_currentIndex = index.row();
 	SAudioPlay::instance()->setAudioFormat(SFFmpeg::instance().audioFormat());
-	SAudioPlay::instance()->start();
+	if(!SAudioPlay::instance()->start())return;
+
 	if(!SFFmpeg::instance().open(fileName.toStdString())){
 		LOG_ERROR("文件打开失败");
 		return;
 	}
-
-	std::call_once(flag,&VideoWidget::threadStart,ui->videoWidget);
 
 	//显示总时长
 	auto totalTime = SFFmpeg::instance().duration() / 1000;
@@ -265,7 +300,7 @@ void SPlay::on_playListView_doubleClicked(const QModelIndex& index)
 	qInfo() << fileName;
 	ui->playListView->setCurrentIndex(index);
 	SFFmpeg::instance().setPlay(true);
-
+	ui->playBtn->setIcon(QIcon(":/Res/play.png"));
 }
 
 void SPlay::timerEvent(QTimerEvent* ev)
