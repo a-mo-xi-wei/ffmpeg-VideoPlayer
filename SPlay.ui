@@ -403,8 +403,11 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
      <property name="styleSheet">
-      <string notr="true">background-color: rgb(140, 140, 140);</string>
+      <string notr="true">background-color: rgb(150, 150, 150);</string>
      </property>
     </widget>
    </item>

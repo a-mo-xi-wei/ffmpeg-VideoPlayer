@@ -140,8 +140,6 @@ void SFFmpeg::aspectSize(int* w, int* h)
 		*h = FFMIN(*w / q2d(this->m_rational), *h);
 		*w = FFMIN(*h * q2d(this->m_rational), *w);
 	}
-
-
 }
 
 double SFFmpeg::packetPts(const AVPacket& pkt)
@@ -252,6 +250,7 @@ bool SFFmpeg::toRGB(char* out, int outWidth, int outHeight)
 		data,linesize);
 	if (h <= 0) {
 		LOG_ERROR("sws_scale failed !");
+		return false;
 	}
 	//LOG_INFO("h : %d", h);
 	return true;

@@ -20,5 +20,6 @@
         <file>Res/top_on.png</file>
         <file>Res/top_off.png</file>
         <file>Res/play.png</file>
+        <file>Res/resume.png</file>
     </qresource>
 </RCC>

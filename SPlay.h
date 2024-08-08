@@ -59,7 +59,9 @@ public slots:
 
     //titleBar
     void on_topBtn_clicked();
-
+    void on_minBtn_clicked();
+    void on_maxBtn_clicked();
+    void on_closeBtn_clicked();
 
 	void on_playListView_doubleClicked(const QModelIndex& index);
 

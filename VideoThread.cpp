@@ -24,7 +24,7 @@ void VideoThread::stop()
 {
 	std::lock_guard<std::mutex>lock(this->m_mutex);
 	if (this->m_thread) {
-		this->m_abort = false;
+		this->m_abort = true;
 		//等待线程关闭
 		if (this->m_thread->joinable())
 			this->m_thread->join();
@@ -90,7 +90,6 @@ void VideoThread::run()
 			//SFFmpeg::instance().decode(&pkt);
 			//av_packet_unref(&pkt);
 			videoPkts.push(pkt);
-			
 			continue;
 		}
 		//睡眠 每一帧消耗的时间（毫秒）
