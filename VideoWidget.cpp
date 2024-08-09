@@ -19,7 +19,6 @@ VideoWidget::~VideoWidget()
 
 void VideoWidget::PlayBeginVideo()
 {
-	//qDebug() << "width : " << this->width() << " height ：" << this->height();
 	SAudioPlay::instance()->setAudioFormat(SFFmpeg::instance().audioFormat());
 	if (!SAudioPlay::instance()->start())return;
 	std::string path = __FILE__;
