@@ -27,6 +27,9 @@
   <property name="windowOpacity">
    <double>1.000000000000000</double>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>5</number>

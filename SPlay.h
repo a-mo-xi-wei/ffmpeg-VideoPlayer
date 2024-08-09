@@ -28,6 +28,50 @@ public:
     }
 };
 
+namespace {
+    // 重点来讲下这个定义,好多教程没有做说明
+    // 这块定义的四个边的边距大小都是5 ,这个可以自定义设置大小
+    // 参考上面图片
+    const int kMouseRegionLeft = 5;
+
+    const int kMouseRegionTop = 5;
+
+    const int kMouseRegionRight = 5;
+
+    const int kMouseRegionBottom = 5;
+
+}
+
+// 鼠标的 活动范围的 枚举
+enum MousePosition
+
+{
+   /* 这里我们将一个窗口划分为9个区域，分别为
+
+    左上角（1, 1）、中上（1，2）、右上角（1, 3）
+
+    左中  （2, 1）、 中间（2, 2）、右中  （2, 3）
+
+    左下角（3, 1）、中下（3，2）、 右下角（3, 3）*/
+    kMousePositionLeftTop = 11,
+
+    kMousePositionTop = 12,
+
+    kMousePositionRightTop = 13,
+
+    kMousePositionLeft = 21,
+
+    kMousePositionMid = 22,
+
+    kMousePositionRight = 23,
+
+    kMousePositionLeftBottom = 31,
+
+    kMousePositionBottom = 32,
+
+    kMousePositionRightBottom = 33,
+
+};
 
 namespace Ui { class SPlay; }
 
@@ -68,6 +112,21 @@ public slots:
 protected:
     bool eventFilter(QObject* obj, QEvent* ev)override;
     void timerEvent(QTimerEvent* ev)override;
+    void paintEvent(QPaintEvent* ev)override;
+protected:
+    void mousePressEvent(QMouseEvent* ev)override;
+    void mouseReleaseEvent(QMouseEvent* ev)override;
+    void mouseMoveEvent(QMouseEvent* ev)override;
+private:
+    //根据鼠标的设置鼠标样式，用于拉伸
+    void SetMouseCursor(int x, int y);
+    //判断鼠标的区域，用于拉伸
+    int GetMouseRegion(int x, int y);
+private:
+    bool isPress;
+    QPoint windowsLastPs;
+    QPoint mousePs;
+    int mouse_press_region = kMousePositionMid;
 private:
 	Ui::SPlay* ui{};
 	QStandardItemModel* m_playListModel;
