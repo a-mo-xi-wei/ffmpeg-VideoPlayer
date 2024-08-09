@@ -15,6 +15,7 @@ public:
 
 	int sampleChannels()const { return this->m_channels; }
 	void setSampleChannels(int sampleChannels) { this->m_channels = sampleChannels; }
+	 
 private:
 	int m_sampleRate{ 48000 };
 	AVSampleFormat m_sampleFormat{ AVSampleFormat::AV_SAMPLE_FMT_S16};

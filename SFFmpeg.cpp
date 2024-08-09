@@ -194,6 +194,7 @@ int SFFmpeg::decode(const AVPacket* pkt)
 			LOG_DEBUG("AVERROR_EOF");
 		}
 		else LOG_ERROR("other error : %s",this->m_errBuf);
+		return -1;
 	}
 
 	AVFrame* frame = nullptr;
@@ -210,6 +211,7 @@ int SFFmpeg::decode(const AVPacket* pkt)
 		}
 		else if (ret == AVERROR_EOF) {
 			LOG_DEBUG("AVERROR_EOF");
+			
 		}
 		else LOG_DEBUG(this->m_errBuf);
 		return -1;
@@ -277,7 +279,7 @@ bool SFFmpeg::toPCM(char* out, int* outSize)
 		}
 
 		ret = swr_init(this->m_swrCtx);
-		if (ret < 0)return -1;
+		if (ret < 0)return false;
 	}
 	uint8_t* data[1] = { (uint8_t*)out };
 	//获取输出采样数
@@ -289,6 +291,13 @@ bool SFFmpeg::toPCM(char* out, int* outSize)
 		LOG_ERROR("swr_convert failed %s ", this->m_errBuf);
 		return false;
 	}
+	//改变音量
+	int16_t* samples = (int16_t*)out;
+	int num_samples = ret * this->m_pcmFrame->ch_layout.nb_channels;
+	for (int i = 0; i < num_samples; ++i) {
+		samples[i] = static_cast<int16_t>(samples[i] * (this->volume() / 100.0f));
+	}
+
 	//获取输出的数据大小
 	ret = av_samples_get_buffer_size(nullptr,
 		this->m_pcmFrame->ch_layout.nb_channels, 

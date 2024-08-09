@@ -42,6 +42,9 @@ public:
 	}
 	inline int audioIndex()const { return this->m_audioIndex; }
 	
+	inline int volume()const { return this->m_volume; }
+	inline void setVolume(const double& volume) { this->m_volume = volume; }
+
 	bool isPlay()const { return this->m_isPlay; }
 	void setPlay(bool play) { this->m_isPlay = play; }
 
@@ -60,6 +63,9 @@ public:
 
 	bool toRGB(char* out, int outWidth, int outHeight);
 	bool toPCM(char* out, int* outSize);
+
+
+
 private:
 	AVCodecContext* StreamCodecContext(int index);
 
@@ -71,6 +77,7 @@ private:
 	uint32_t m_totalMs{};	//视频时长(ms)
 	double m_fps = 0.0;		//视频帧率
 	double m_pts = 0.0;		//当前播放时长
+	int m_volume = 50;	//当前声音大小
 	bool m_isPlay{ false };
 
 	//缩放模式

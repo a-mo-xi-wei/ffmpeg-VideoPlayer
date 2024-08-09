@@ -70,6 +70,7 @@ QLabel#totalTimeLab{
 
 QWidget{
     background-color:#CCFFEE;
+    background: transparent;
 }
 #playListView{
     border-radius:20px;
