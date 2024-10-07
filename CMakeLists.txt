@@ -13,10 +13,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets UiTools Multimedia)
 
 #指定头文件包含目录
-include_directories("F:/ffmpeg-build/msvc/include")
+include_directories("F:/FFmpeg-build/ffmpegInclude")
 
 #指定库目录
-link_directories("F:/ffmpeg-build/msvc/lib/x64")
+link_directories("F:/FFmpeg-build/ffmpegLib")
 
 file(GLOB SOURCE_CPP ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB SOURCE_H ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
@@ -34,6 +34,19 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} "Res.qrc")
 
-target_link_libraries(${PROJECT_NAME} Qt6::Widgets Qt6::Multimedia
-libavformatd libavcodecd libavutild libavfilterd 
-libavdeviced libswscaled libswresampled Qt6::UiTools)
+# 指定库的包含目录
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(${PROJECT_NAME} Qt6::Widgets Qt6::Multimedia avformat avcodec
+    avutil avfilter avdevice swscale swresample Qt6::UiTools)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "F:/FFmpeg-build/bin/x64/avformat.dll"
+    "F:/FFmpeg-build/bin/x64/avcodec.dll"
+    "F:/FFmpeg-build/bin/x64/avutil.dll"
+    "F:/FFmpeg-build/bin/x64/avfilter.dll"
+    "F:/FFmpeg-build/bin/x64/avdevice.dll"
+    "F:/FFmpeg-build/bin/x64/swscale.dll"
+    "F:/FFmpeg-build/bin/x64/swresample.dll"
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
